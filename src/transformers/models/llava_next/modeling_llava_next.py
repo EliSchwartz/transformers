@@ -76,7 +76,7 @@ def get_anyres_image_grid_shape(image_size, grid_pinpoints, patch_size):
     return height // patch_size, width // patch_size
 
 
-def image_size_to_num_patches(image_size, grid_pinpoints, patch_size: int):
+def image_size_to_num_patches(image_size, grid_pinpoints, patch_size: int, dont_patchify_small_images=False):
     """
     Calculate the number of patches after the preprocessing for images of any resolution.
 
@@ -100,6 +100,9 @@ def image_size_to_num_patches(image_size, grid_pinpoints, patch_size: int):
         if not isinstance(image_size, (torch.Tensor, np.ndarray)):
             raise TypeError(f"image_size invalid type {type(image_size)} with value {image_size}")
         image_size = image_size.tolist()
+
+    if dont_patchify_small_images and image_size[0]<=patch_size and image_size[1]<=patch_size:
+        return 1
 
     best_resolution = select_best_resolution(image_size, grid_pinpoints)
     height, width = best_resolution
@@ -508,6 +511,7 @@ class LlavaNextForConditionalGeneration(LlavaNextPreTrainedModel, GenerationMixi
                 image_size=imsize,
                 grid_pinpoints=self.config.image_grid_pinpoints,
                 patch_size=self.config.vision_config.image_size,
+                dont_patchify_small_images=self.config.dont_patchify_small_images,
             )
             for imsize in image_sizes
         ]

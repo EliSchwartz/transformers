@@ -170,6 +170,7 @@ class LlavaNextImageProcessor(BaseImageProcessor):
         do_resize: bool = True,
         size: Dict[str, int] = None,
         image_grid_pinpoints: List = None,
+        dont_patchify_small_images: bool = False,
         resample: PILImageResampling = PILImageResampling.BICUBIC,
         do_center_crop: bool = True,
         crop_size: Dict[str, int] = None,
@@ -196,6 +197,7 @@ class LlavaNextImageProcessor(BaseImageProcessor):
         self.do_resize = do_resize
         self.size = size
         self.image_grid_pinpoints = image_grid_pinpoints
+        self.dont_patchify_small_images = dont_patchify_small_images
         self.resample = resample
         self.do_center_crop = do_center_crop
         self.crop_size = crop_size
@@ -456,6 +458,7 @@ class LlavaNextImageProcessor(BaseImageProcessor):
         self,
         image: np.array,
         grid_pinpoints,
+        dont_patchify_small_images,
         size: tuple,
         patch_size: int,
         resample: PILImageResampling,
@@ -490,19 +493,22 @@ class LlavaNextImageProcessor(BaseImageProcessor):
         possible_resolutions = grid_pinpoints
 
         image_size = get_image_size(image, channel_dim=input_data_format)
-        best_resolution = select_best_resolution(image_size, possible_resolutions)
-        resized_image = self._resize_for_patching(
-            image, best_resolution, resample=resample, input_data_format=input_data_format
-        )
-        padded_image = self._pad_for_patching(resized_image, best_resolution, input_data_format=input_data_format)
+        if dont_patchify_small_images and image_size[0]<=patch_size and image_size[1]<=patch_size:
+            patches = []
+        else:
+            best_resolution = select_best_resolution(image_size, possible_resolutions)
+            resized_image = self._resize_for_patching(
+                image, best_resolution, resample=resample, input_data_format=input_data_format
+            )
+            padded_image = self._pad_for_patching(resized_image, best_resolution, input_data_format=input_data_format)
 
-        patches = divide_to_patches(padded_image, patch_size=patch_size, input_data_format=input_data_format)
+            patches = divide_to_patches(padded_image, patch_size=patch_size, input_data_format=input_data_format)
 
-        # make sure that all patches are in the input data format
-        patches = [
-            to_channel_dimension_format(patch, channel_dim=data_format, input_channel_dim=input_data_format)
-            for patch in patches
-        ]
+            # make sure that all patches are in the input data format
+            patches = [
+                to_channel_dimension_format(patch, channel_dim=data_format, input_channel_dim=input_data_format)
+                for patch in patches
+            ]
 
         resized_original_image = resize(
             image,
@@ -561,6 +567,7 @@ class LlavaNextImageProcessor(BaseImageProcessor):
         do_resize: bool = None,
         size: Dict[str, int] = None,
         image_grid_pinpoints: List = None,
+        dont_patchify_small_images: bool = None,
         resample: PILImageResampling = None,
         do_center_crop: bool = None,
         crop_size: int = None,
@@ -635,6 +642,7 @@ class LlavaNextImageProcessor(BaseImageProcessor):
         size = size if size is not None else self.size
         size = get_size_dict(size, param_name="size", default_to_square=False)
         image_grid_pinpoints = image_grid_pinpoints if image_grid_pinpoints is not None else self.image_grid_pinpoints
+        dont_patchify_small_images = dont_patchify_small_images if dont_patchify_small_images is not None else self.dont_patchify_small_images
         resample = resample if resample is not None else self.resample
         do_center_crop = do_center_crop if do_center_crop is not None else self.do_center_crop
         crop_size = crop_size if crop_size is not None else self.crop_size
@@ -692,6 +700,7 @@ class LlavaNextImageProcessor(BaseImageProcessor):
             image_patches = self.get_image_patches(
                 image,
                 image_grid_pinpoints,
+                dont_patchify_small_images,
                 size=(size["shortest_edge"], size["shortest_edge"])
                 if "shortest_edge" in size
                 else (min(size["height"], size["width"]), min(size["height"], size["width"])),

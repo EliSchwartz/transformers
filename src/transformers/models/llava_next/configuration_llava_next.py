@@ -91,6 +91,7 @@ class LlavaNextConfig(PretrainedConfig):
         vision_feature_select_strategy="default",
         vision_feature_layer=-2,
         image_grid_pinpoints=None,
+        dont_patchify_small_images=False,
         tie_word_embeddings=False,
         image_seq_length=576,
         multimodal_projector_bias=True,
@@ -115,6 +116,7 @@ class LlavaNextConfig(PretrainedConfig):
             else [[336, 672], [672, 336], [672, 672], [1008, 336], [336, 1008]]
         )
         self.image_grid_pinpoints = image_grid_pinpoints
+        self.dont_patchify_small_images = dont_patchify_small_images
 
         if isinstance(vision_config, dict):
             vision_config["model_type"] = (

@@ -171,8 +171,13 @@ class LlavaNextProcessor(ProcessorMixin):
         return BatchFeature(data={**text_inputs, **image_inputs})
 
     def _get_number_of_features(self, orig_height: int, orig_width: int, height: int, width: int) -> int:
+        if (self.image_processor.dont_patchify_small_images and
+            orig_height<=self.patch_size and orig_width<=self.patch_size):
+            # if we don't patichify small images and it's a small image we have only global view
+            return 1 + self.num_additional_image_tokens
+        
         image_grid_pinpoints = self.image_processor.image_grid_pinpoints
-
+        
         height_best_resolution, width_best_resolution = select_best_resolution(
             [orig_height, orig_width], image_grid_pinpoints
         )
