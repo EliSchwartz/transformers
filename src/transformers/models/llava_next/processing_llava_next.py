@@ -180,6 +180,10 @@ class LlavaNextProcessor(ProcessorMixin):
 
         patches_height = height // self.patch_size
         patches_width = width // self.patch_size
+        if patches_height==1 and patches_width==1:
+            # no extra features if this is a single patch (we keep just the global view) 
+            num_image_tokens = 1 + self.num_additional_image_tokens
+            return num_image_tokens
         unpadded_features, newline_features = self._get_unpadded_features(
             orig_height, orig_width, patches_height, patches_width, scale_height, scale_width
         )
@@ -193,7 +197,7 @@ class LlavaNextProcessor(ProcessorMixin):
         Get number of features for a given image with height/width. LLaVA-NeXT is different from LLaVA
         because it divided each image into patches depending on its resolution. Therefore we need to calculate how many
         patches an image is divided into and get the number of features from that.
-        """
+        """            
         current_height = patches_height * scale_height
         current_width = patches_width * scale_width
 
