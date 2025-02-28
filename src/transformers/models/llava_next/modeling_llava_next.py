@@ -108,6 +108,8 @@ def image_size_to_num_patches(image_size, grid_pinpoints, patch_size: int):
     for i in range(0, height, patch_size):
         for j in range(0, width, patch_size):
             num_patches += 1
+    if num_patches==1: # don't use a single patch for small images since it's similar to the global view
+        return 1 # just base
     # add the base patch
     num_patches += 1
     return num_patches
