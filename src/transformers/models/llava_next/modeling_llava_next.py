@@ -109,7 +109,8 @@ def image_size_to_num_patches(image_size, grid_pinpoints, patch_size: int):
         for j in range(0, width, patch_size):
             num_patches += 1
     # add the base patch
-    num_patches += 1
+    if num_patches>1:
+        num_patches += 1
     return num_patches
 
 
@@ -596,7 +597,6 @@ class LlavaNextForConditionalGeneration(LlavaNextPreTrainedModel, GenerationMixi
         >>> processor.batch_decode(generate_ids, skip_special_tokens=True, clean_up_tokenization_spaces=False)[0]
         "[INST]  \nWhat is shown in this image? [/INST] The image appears to be a radar chart, which is a type of multi-dimensional plot (...)"
         ```"""
-
         output_attentions = output_attentions if output_attentions is not None else self.config.output_attentions
         output_hidden_states = (
             output_hidden_states if output_hidden_states is not None else self.config.output_hidden_states

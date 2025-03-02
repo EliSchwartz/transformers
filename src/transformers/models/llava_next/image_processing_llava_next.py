@@ -497,7 +497,8 @@ class LlavaNextImageProcessor(BaseImageProcessor):
         padded_image = self._pad_for_patching(resized_image, best_resolution, input_data_format=input_data_format)
 
         patches = divide_to_patches(padded_image, patch_size=patch_size, input_data_format=input_data_format)
-
+        if len(patches)==1: # if it's a single patch the image is fitting the global view and anyres isn't needed
+            patches = []
         # make sure that all patches are in the input data format
         patches = [
             to_channel_dimension_format(patch, channel_dim=data_format, input_channel_dim=input_data_format)

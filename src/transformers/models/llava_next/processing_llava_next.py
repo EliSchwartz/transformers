@@ -177,15 +177,22 @@ class LlavaNextProcessor(ProcessorMixin):
             [orig_height, orig_width], image_grid_pinpoints
         )
         scale_height, scale_width = height_best_resolution // height, width_best_resolution // width
-
         patches_height = height // self.patch_size
         patches_width = width // self.patch_size
-        unpadded_features, newline_features = self._get_unpadded_features(
-            orig_height, orig_width, patches_height, patches_width, scale_height, scale_width
-        )
+        
         # The base patch covers the entire image (+1 for the CLS)
         base_features = patches_height * patches_width + self.num_additional_image_tokens
-        num_image_tokens = unpadded_features + newline_features + base_features
+
+        crop_size = self.image_processor.crop_size
+        # if the image is small and fits a single crop only use the base features
+        if height_best_resolution==crop_size['height'] and width_best_resolution==crop_size['width']:
+            num_image_tokens = base_features + 1 # +1 for newline
+        else: # Use both base and anyres features
+            unpadded_features, newline_features = self._get_unpadded_features(
+                orig_height, orig_width, patches_height, patches_width, scale_height, scale_width
+            )
+            num_image_tokens = unpadded_features + newline_features + base_features
+
         return num_image_tokens
 
     def _get_unpadded_features(self, height, width, patches_height, patches_width, scale_height, scale_width):
